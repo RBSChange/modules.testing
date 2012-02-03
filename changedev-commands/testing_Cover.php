@@ -74,7 +74,6 @@ class commands_testing_Cover extends commands_AbstractChangeCommand
 			AG_MODULE_DIR;
 		
 		$output = array();
-		$this->message($command);
 		$execution = exec($command, $output);
 		
 		$this->quitOk(implode(PHP_EOL, $output) . PHP_EOL . 
