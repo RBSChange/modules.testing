@@ -75,7 +75,7 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 		require_once WEBEDIT_HOME . "/framework/Framework.php";
 		
 		//Location of the test from module name to the unit tests folder
-		$testsDefaultLocation = DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'testsU' . 
+		$testsDefaultLocation = DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'unit' . 
 			DIRECTORY_SEPARATOR;
 		$phpunitLocation = PEAR_DIR . DIRECTORY_SEPARATOR . 'phpunit.php';
 		

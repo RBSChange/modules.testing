@@ -12,13 +12,6 @@ class testing_UnitTestBase extends PHPUnit_Framework_TestCase
 	protected function setUp()
 	{
 		parent::setUp();
-		if (!defined('PROJECT_HOME'))
-		{
-			define('PROJECT_HOME', '/home/renaud/sites/fix');
-			define('WEBEDIT_HOME', PROJECT_HOME);
-		}
-		// Starts the framework
-		require_once PROJECT_HOME . "/framework/Framework.php";
 
 		$this->setRunTestInSeparateProcess(true);
 	}

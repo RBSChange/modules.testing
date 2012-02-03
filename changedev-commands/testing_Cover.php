@@ -74,9 +74,10 @@ class commands_testing_Cover extends commands_AbstractChangeCommand
 			AG_MODULE_DIR;
 		
 		$output = array();
+		$this->message($command);
 		$execution = exec($command, $output);
 		
-		$this->quitOk($execution . PHP_EOL . 
+		$this->quitOk(implode(PHP_EOL, $output) . PHP_EOL . 
 			'HTML Report generated! You can find the index.html in this folder: ' . 
 			$coverageReportFolder . DIRECTORY_SEPARATOR . 'index.html');
 	}

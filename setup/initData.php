@@ -6,7 +6,8 @@ class testing_Setup extends object_InitDataSetup
 {
 	public function install()
 	{
-		// $this->executeModuleScript('init.xml');
+		$this->copyToWebsiteRootFolder('phpunit.xml');
+		$this->copyToWebsiteRootFolder('phpunitBootstrap.php');
 	}
 
 	/**
@@ -19,5 +20,19 @@ class testing_Setup extends object_InitDataSetup
 		// Example:
 		// return array('modules_website', 'modules_users');
 		return array();
+	}
+	
+	/**
+	 * @param string $fileName file name to copy to website root folder 
+	 */
+	private function copyToWebsiteRootFolder($fileName)
+	{
+		$ds = DIRECTORY_SEPARATOR;
+		$source = AG_MODULE_DIR . $ds . 'testing' . $ds . 'setup' . $ds . $fileName;
+		$dest = WEBEDIT_HOME . $ds . $fileName;
+		if (!copy($source, $dest))
+		{
+			$this->addError('Problem occured during the copy of the file: ' . $fileName);
+		}
 	}
 }
