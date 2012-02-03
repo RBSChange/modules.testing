@@ -8,6 +8,15 @@ class testing_Setup extends object_InitDataSetup
 	{
 		$this->copyToWebsiteRootFolder('phpunit.xml');
 		$this->copyToWebsiteRootFolder('phpunitBootstrap.php');
+		$phpunitFilename = PEAR_DIR . DIRECTORY_SEPARATOR . 'phpunit.php';
+		if (!chmod($phpunitFilename, 0755))
+		{
+			$this->addError('Problem occured during the right modification (chmod) on phpunit.php');
+		}
+		else
+		{
+			$this->addInfo('right on pear/phpunit.php has been changed to 0755');
+		}
 	}
 
 	/**
@@ -33,6 +42,10 @@ class testing_Setup extends object_InitDataSetup
 		if (!copy($source, $dest))
 		{
 			$this->addError('Problem occured during the copy of the file: ' . $fileName);
+		}
+		else
+		{
+			$this->addInfo($fileName . ' has been copied in your website root folder');
 		}
 	}
 }
