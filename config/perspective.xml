@@ -1,41 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <perspective>
 	<models>
-		<model name="modules_generic/rootfolder">
-			<children>	
-				<child model="modules_generic/folder" />
-				<child model="modules_generic/systemfolder" />
-			</children>
-			<drops>
-				<drop model="modules_generic/folder" action="move" />
-				<drop model="modules_generic/systemfolder" action="move" />
-			</drops>
-			<contextactions>
-				<contextaction name="edit" />
-				<contextaction name="createFolder" />
-				<contextaction name="openTreeNodeOrder" />
-			</contextactions>	
-		</model>
-		<model name="modules_generic/folder">
-			<children>
-				<child model="modules_generic/folder" />
-			</children>
-			<drops>
-				<drop model="modules_generic/folder" action="move" />
-			</drops>
-			<contextactions>
-				<contextaction name="edit" />
-				<contextaction name="delete" />				
-				<contextaction name="createFolder" />
-				<contextaction name="openTreeNodeOrder" />
-				<contextaction name="openFolder" />
-			</contextactions>
-		</model>
-		<model name="modules_generic/systemfolder">
-			<contextactions>
-				<contextaction name="openFolder" />
-			</contextactions>
-		</model>
 	</models>
 	<toolbar>
 		<toolbarbutton name="edit" />
