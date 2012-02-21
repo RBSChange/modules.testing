@@ -28,23 +28,31 @@ class commands_testing_Cover extends commands_AbstractChangeCommand
 	 * @param array<String, String> $options where the option array key is the option name, the potential option value or true
 	 * @return String[] or null
 	 */
-//	public function getParameters($completeParamCount, $params, $options, $current)
-//	{
-//		$components = array();
+// 	public function getParameters($completeParamCount, $params, $options, $current)
+// 	{
+// 		$components = array();
 //		
-//		// Generate options in $components.		
-//		
-//		return $components;
-//	}
+// 		if ($completeParamCount == 0)
+// 		{
+// 			foreach (glob("modules/*", GLOB_ONLYDIR) as $module)
+// 			{
+// 				$components[] = basename($module);
+// 			}
+// 			return $components;
+// 		}
+//				
+// 		return array_diff($components, $params);
+// 	}
 	
 	/**
 	 * @param String[] $params
 	 * @param array<String, String> $options where the option array key is the option name, the potential option value or true
 	 * @return boolean
 	 */
-//	protected function validateArgs($params, $options)
-//	{
-//	}
+// 	protected function validateArgs($params, $options)
+// 	{
+// 		return (count($params) > 0);
+// 	}
 
 	/**
 	 * @return String[]
@@ -70,14 +78,25 @@ class commands_testing_Cover extends commands_AbstractChangeCommand
 		$coverageReportFolder = WEBEDIT_HOME . DIRECTORY_SEPARATOR . 'testing' . 
 			DIRECTORY_SEPARATOR . 'report';
 		
-		$command = $phpunitLocation . ' --coverage-html ' . $coverageReportFolder . ' ' . 
-			AG_MODULE_DIR;
+		$modules = glob("modules/*", GLOB_ONLYDIR);
+		$modulesHaveTests = glob("modules/*/tests", GLOB_ONLYDIR);
+		$modulesHaveNoTests = array_diff($modules, $modulesHaveTests);
+		$i = 0;
+		foreach ($modulesHaveNoTests as $moduleHasNoTests)
+		{
+			$this->warnMessage(basename($moduleHasNoTests) . ' has no tests folder!');
+			$i++;
+		}
+		if ($i > 0)
+		{
+			$this->warnMessage('Modules who haven\'t tests folder and available tests inner are excluded from Code Coverage');
+		}
 		
+		$command = $phpunitLocation . ' --coverage-html ' . $coverageReportFolder;
 		$output = array();
 		$execution = exec($command, $output);
-		
-		$this->quitOk(implode(PHP_EOL, $output) . PHP_EOL . 
-			'HTML Report generated! You can find the index.html in this folder: ' . 
+		$this->message(implode(PHP_EOL, $output));
+		$this->quitOk('HTML Report generated! You can find the index.html in this folder: ' .
 			$coverageReportFolder . DIRECTORY_SEPARATOR . 'index.html');
 	}
 }

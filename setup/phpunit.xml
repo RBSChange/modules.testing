@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit bootstrap="phpunitBootstrap.php">
+	<testsuites>
+  		<testsuite name="Coverage Test Suite">
+    			<directory suffix="Test.php"></directory>
+  		</testsuite>
+	</testsuites>
 	<filter>
 	  	<blacklist>
 	  		<directory suffix=".php">./build</directory>
