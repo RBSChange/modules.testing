@@ -6,6 +6,14 @@
 class commands_testing_Cover extends commands_AbstractChangeCommand
 {
 	/**
+	 * @return Boolean default false
+	 */
+	function isHidden()
+	{
+		return true;
+	}
+	
+	/**
 	 * @return String
 	 */
 	public function getUsage()
@@ -68,35 +76,38 @@ class commands_testing_Cover extends commands_AbstractChangeCommand
 	 */
 	public function _execute($params, $options)
 	{
-		// Starts the framework
-		require_once WEBEDIT_HOME . "/framework/Framework.php";
+		$this->warnMessage('testing.cover is not implemented yet');
 		
-		$this->message("== Cover ==");
-		$this->warnMessage('That take a long time');
+// 		// Starts the framework
+// 		require_once WEBEDIT_HOME . "/framework/Framework.php";
 		
-		$phpunitLocation = PEAR_DIR . DIRECTORY_SEPARATOR . 'phpunit.php';
-		$coverageReportFolder = WEBEDIT_HOME . DIRECTORY_SEPARATOR . 'testing' . 
-			DIRECTORY_SEPARATOR . 'report';
+// 		$this->message("== Cover ==");
+// 		$this->warnMessage('That take a long time');
 		
-		$modules = glob("modules/*", GLOB_ONLYDIR);
-		$modulesHaveTests = glob("modules/*/tests", GLOB_ONLYDIR);
-		$modulesHaveNoTests = array_diff($modules, $modulesHaveTests);
-		$i = 0;
-		foreach ($modulesHaveNoTests as $moduleHasNoTests)
-		{
-			$this->warnMessage(basename($moduleHasNoTests) . ' has no tests folder!');
-			$i++;
-		}
-		if ($i > 0)
-		{
-			$this->warnMessage('Modules who haven\'t tests folder and available tests inner are excluded from Code Coverage');
-		}
+// 		$phpunitLocation = WEBEDIT_HOME . DIRECTORY_SEPARATOR . 'changePHPUnit.php';
+// 		$coverageReportFolder = WEBEDIT_HOME . DIRECTORY_SEPARATOR . 'testing' . 
+// 			DIRECTORY_SEPARATOR . 'report';
 		
-		$command = $phpunitLocation . ' --coverage-html ' . $coverageReportFolder;
-		$output = array();
-		$execution = exec($command, $output);
-		$this->message(implode(PHP_EOL, $output));
-		$this->quitOk('HTML Report generated! You can find the index.html in this folder: ' .
-			$coverageReportFolder . DIRECTORY_SEPARATOR . 'index.html');
+// 		$modules = glob("modules/*", GLOB_ONLYDIR);
+// 		$modulesHaveTests = glob("modules/*/tests", GLOB_ONLYDIR);
+// 		$modulesHaveNoTests = array_diff($modules, $modulesHaveTests);
+// 		$i = 0;
+// 		foreach ($modulesHaveNoTests as $moduleHasNoTests)
+// 		{
+// 			$this->warnMessage(basename($moduleHasNoTests) . ' has no tests folder!');
+// 			$i++;
+// 		}
+// 		if ($i > 0)
+// 		{
+// 			$this->warnMessage('Modules who haven\'t tests folder and available tests inner are excluded from Code Coverage');
+// 		}
+		
+// 		$command = 'php ' . $phpunitLocation . ' --coverage-html ' . $coverageReportFolder;
+		
+// 		$output = array();
+// 		$execution = exec($command, $output);
+// 		$this->message(implode(PHP_EOL, $output));
+// 		$this->quitOk('HTML Report generated! You can find the index.html in this folder: ' .
+// 			$coverageReportFolder . DIRECTORY_SEPARATOR . 'index.html');
 	}
 }
