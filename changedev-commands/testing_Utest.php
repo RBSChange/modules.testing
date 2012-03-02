@@ -11,7 +11,7 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 	 */
 	public function getUsage()
 	{
-		return "all|[<moduleName>] [<particularTest.php>] [--report /path/to/report/]";
+		return "all|[<moduleName>] [<particularTest.php>] [--report [/path/to/report/]]";
 	}
 	
 	/**
@@ -21,10 +21,13 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 	public function getDescription()
 	{
 		return "Launch unit test with PHPUnit" . PHP_EOL .
-			"'all' to execute all test included in framework and modules who get tests/unit folder inner" . PHP_EOL .
-			"Specify a module name to launch all tests included in the module" . PHP_EOL .
-			"Specify a file name after module name to launch particular test" . PHP_EOL .
-			"add '--report /path/to/report/folder/' after the command to generate a Junit report and a PHP report in the specified folder";
+			"Parameters" . PHP_EOL .
+			" * all: launch all tests" . PHP_EOL .
+			" * moduleName : launch all tests included in the module" . PHP_EOL .
+			" * moduleName fileName.php : launch particular test file of the module" . PHP_EOL .
+			"Optionals" . PHP_EOL .
+			" * --report [/path/to/report/folder/] : generate a Junit report and a PHP report" . PHP_EOL .
+			" * --reportJunit [/path/to/report/folder/] : generate only the Junit report";
 	}
 	
 	/**
@@ -72,7 +75,7 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 	 */
 	public function getOptions()
 	{
-		return array('--report');
+		return array('--report', '--reportJunit');
 	}
 	
 	/**
@@ -96,20 +99,48 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 		
 		$command = 'php ' . $phpunitLocation . ' ';
 		$command .= '--verbose ';
-		if (array_key_exists('report', $options))
+		if (array_key_exists('report', $options) || array_key_exists('reportJunit', $options))
 		{
-			$reportFolder = array_pop($params);
-			if (is_dir($reportFolder))
+			//last params value is a valid absolute path
+			if (preg_match('/^\//', $params[count($params) - 1]) && strpos($params[count($params) - 1], '/') !== false)
 			{
-				$reportFolder = substr($reportFolder, -1) == DIRECTORY_SEPARATOR ? $reportFolder : $reportFolder . DIRECTORY_SEPARATOR;
-				$junitReport = $reportFolder . 'junitReport_' . date('Y-m-d_H-i-s') . '.xml';
-				$command .= '--log-junit ' . $junitReport . ' ';
+				$reportFolder = array_pop($params);
+				if (!is_dir($reportFolder))
+				{
+					$this->quitError($reportFolder . 'is not a valid absolute path, give a correct after --report or --reportJunit');
+					exit();
+				}
 			}
-			else
+			else if (Framework::hasConfiguration('modules/testing/reportFolder'))
 			{
-				$this->quitError('Give a valid path after --report');
+				$configReportFolder = Framework::getConfigurationValue('modules/testing/reportFolder');
+				if (is_dir($configReportFolder))
+				{
+					$reportFolder = $configReportFolder;
+					$message .= 'Config value for report folder exist, the test will be genereted in: ' . $configReportFolder . PHP_EOL;
+				}
+				else
+				{
+					if (mkdir($configReportFolder, 0777, true))
+					{
+						$message .= 'Config value for report folder exist, the folder have been created at: ' . $configReportFolder . PHP_EOL;
+						$reportFolder = $configReportFolder;
+					}
+					else
+					{
+						$this->quitError('cannot create folder: ' . $configReportFolder . ' are you sure you\'ve the right to do that?');
+						exit();
+					}
+				}
+			}
+			else 
+			{
+				$this->quitError('Config value for report folder doesn\'t exist so give a correct absolute path after --report or --reportJunit');
 				exit();
 			}
+			$reportFolder = substr($reportFolder, -1) == DIRECTORY_SEPARATOR ? $reportFolder : $reportFolder . DIRECTORY_SEPARATOR;
+			$junitReport = $reportFolder . 'junitReport_' . date('Y-m-d_H-i-s') . '.xml';
+			$command .= '--log-junit ' . $junitReport . ' ';
 		}
 		
 		if (strtolower($params[0]) == 'framework')
@@ -150,6 +181,10 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 		{
 			$this->generateReport($junitReport);
 		}
+		else if (array_key_exists('reportJunit', $options))
+		{
+			$this->message('check generated Junit report at: ' . $junitReport);
+		}
 		
 		if (f_util_StringUtils::beginsWith($execution, 'OK'))
 		{
@@ -176,14 +211,28 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 		$reportFolder = dirname($pathOfJUnit);
 		$filename = $reportFolder . DIRECTORY_SEPARATOR . $phpFormatedReportFilename;
 		$junitReport = new DOMDocument('1.0', 'UTF-8');
-		
 		if ($junitReport->load($pathOfJUnit) && $phpFormatedReport = fopen($filename, 'a'))
 		{
-			$content = '<?php ' . PHP_EOL . '/**' . PHP_EOL . ' * Auto generated PHPUnit test report by Change' . PHP_EOL . ' */' . PHP_EOL . PHP_EOL;
+			$content =
+			'<?php ' . PHP_EOL .
+			'/**' . PHP_EOL .
+			' * Auto generated PHPUnit test report by Change' . PHP_EOL .
+			' */' . PHP_EOL . PHP_EOL;
+			
+			//Get resume infos
+			$testsuiteResume = $junitReport->getElementsByTagName('testsuite')->item(0);
+			
+			$testsNb = $testsuiteResume->attributes->getNamedItem('tests')->nodeValue;
+			$assertionsNb = $testsuiteResume->attributes->getNamedItem('assertions')->nodeValue;
+			$failuresNb = $testsuiteResume->attributes->getNamedItem('failures')->nodeValue;
+			$errorsNb = $testsuiteResume->attributes->getNamedItem('errors')->nodeValue;
+			$time = $testsuiteResume->attributes->getNamedItem('time')->nodeValue;
 			
 			$testcases = $junitReport->getElementsByTagName('testcase');
 			
 			$testcasesArray = array();
+			
+			$autogeneratedNb = 0;
 			
 			foreach ($testcases as $testcase)
 			{
@@ -197,14 +246,30 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 						/* @var $testcaseNode DOMText */
 						if ($testcaseNode->attributes)
 						{
+							$isAutogenereted = $testcaseNode->attributes->getNamedItem('type')->nodeValue == 'testing_AutoGeneratedException';
+							
 							$status = $testcaseNode->attributes->getNamedItem('type')->nodeValue;
 							$testcasesArray[$status][$caseName][] = $testcaseNode->attributes->getNamedItem('type')->nodeValue;
-							$testcasesArray[$status][$caseName]['autogenerated'] = $testcaseNode->attributes->getNamedItem('type')->nodeValue == 'testing_AutoGeneratedException';
+							$testcasesArray[$status][$caseName]['autogenerated'] = $isAutogenereted;
 							$testcasesArray[$status][$caseName]['message'] = 'Message: ' . $testcase->textContent;
+							
+							if ($isAutogenereted)
+							{
+								$autogeneratedNb++;
+							}							
 						}
 					}
 				}
 			}
+			
+			$content .= 
+				'/**' . PHP_EOL .
+				' * tests: ' . $testsNb . '  assertions: ' . $assertionsNb . '  time: ' . $time . PHP_EOL . 
+				' * errors: ' . $errorsNb . PHP_EOL .
+				' * total failures: ' . $failuresNb . PHP_EOL .
+				' *   real failures: ' . ($failuresNb - $autogeneratedNb) . PHP_EOL .
+				' *   autogenerated: ' . $autogeneratedNb . PHP_EOL .
+				' */' . PHP_EOL . PHP_EOL;
 			
 			uksort($testcasesArray, "self::compareType");
 			
