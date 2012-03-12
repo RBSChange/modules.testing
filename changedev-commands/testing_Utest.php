@@ -5,13 +5,17 @@
  */
 class commands_testing_Utest extends commands_AbstractChangeCommand
 {
+	const ALL_TEST = 0;
+	const GENERIC_TEST = 1;
+	const SPECIFIC_TEST = 2;
+	
 	/**
 	 *
 	 * @return String
 	 */
 	public function getUsage()
 	{
-		return "all|[<moduleName>|framework [<particularTest.php> [<testName>]]] [--report [/path/to/report/]]";
+		return "all|generic|specific|[<moduleName>|framework [<particularTest.php> [<testName>]]] [--report [/path/to/report/]]";
 	}
 	
 	/**
@@ -20,13 +24,7 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 	 */
 	public function getDescription()
 	{
-		return "Launch unit test with PHPUnit" . PHP_EOL .
-			"Parameters" . PHP_EOL .
-			" * all: launch all tests" . PHP_EOL .
-			" * moduleName|framework [fileName.php [testName]] : launch module or framework tests, precise file name for one tests file, precise test name for one test" . PHP_EOL .
-			"Optionals" . PHP_EOL . 
-			" * --report [/path/to/report/folder/] : generate a Junit report and a PHP report" . PHP_EOL . 
-			" * --reportJunit [/path/to/report/folder/] : generate only the Junit report";
+		return "Launch unit test with PHPUnit" . PHP_EOL . "Parameters" . PHP_EOL . " * all: launch all tests, generic: all generic tests (framework + modules), specific: all specialized modules" . PHP_EOL . " * moduleName|framework [fileName.php [testName]] : launch module or framework tests, precise file name for one tests file, precise test name for one test" . PHP_EOL . "Optionals" . PHP_EOL . " * --report [/path/to/report/folder/] : generate a Junit report and a PHP report" . PHP_EOL . " * --reportJunit [/path/to/report/folder/] : generate only the Junit report";
 	}
 	
 	/**
@@ -151,10 +149,22 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 		}
 		else
 		{
-			if (strtolower($params[0]) == 'all')
+			if (strtolower($params[0]) == 'generic')
 			{
 				$message = 'Execute all unit tests included in the tests/unit folder of modules and framework.' . PHP_EOL . 'That can be very long';
-				$testsuiteFilePath = $this->generateTestSuite($testsDefaultLocation);
+				$testsuiteFilePath = $this->generateTestSuite($testsDefaultLocation, self::GENERIC_TEST);
+				$switches .= '-c ' . $testsuiteFilePath;
+			}
+			else if (strtolower($params[0]) == 'all')
+			{
+				$message = 'Execute all unit tests included in the tests/unit folder of modules and framework. That can be very long';
+				$testsuiteFilePath = $this->generateTestSuite($testsDefaultLocation, self::ALL_TEST);
+				$switches .= '-c ' . $testsuiteFilePath;
+			}
+			else if (strtolower($params[0]) == 'specific')
+			{
+				$message = 'Execute all unit tests included in the tests/unit folder of your specialized modules. That can be very long';
+				$testsuiteFilePath = $this->generateTestSuite($testsDefaultLocation, self::SPECIFIC_TEST);
 				$switches .= '-c ' . $testsuiteFilePath;
 			}
 			else
@@ -341,9 +351,11 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 	
 	/**
 	 *
-	 * @param string $testsDefaultLocation       	
+	 * @param string $testsDefaultLocation
+	 * @param integer $typeOfTests of commands_testing_Utest const
+	 * @return string
 	 */
-	private function generateTestSuite($testsDefaultLocation)
+	private function generateTestSuite($testsDefaultLocation, $typeOfTests = self::ALL_TEST)
 	{
 		$filename = f_util_FileUtils::getTmpFile('testSuite');
 		
@@ -361,19 +373,92 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 		$nameAttribute->value = 'allTests';
 		$testsuite->appendChild($nameAttribute);
 		
-		$frameworkDirectory = $domDoc->createElement('directory');
-		$frameworkDirectory = $testsuite->appendChild($frameworkDirectory);
-		$frameworkDirectoryTextNode = $domDoc->createTextNode(FRAMEWORK_HOME . $testsDefaultLocation);
-		$frameworkDirectoryTextNode = $frameworkDirectory->appendChild($frameworkDirectoryTextNode);
-		
-		$moduleDirectory = $domDoc->createElement('directory');
-		$moduleDirectory = $testsuite->appendChild($moduleDirectory);
-		$moduleDirectoryTextNode = $domDoc->createTextNode(AG_MODULE_DIR . DIRECTORY_SEPARATOR . '*' . $testsDefaultLocation);
-		$moduleDirectoryTextNode = $moduleDirectory->appendChild($moduleDirectoryTextNode);
+		switch ($typeOfTests)
+		{
+			case self::ALL_TEST :
+				$frameworkDirectory = $domDoc->createElement('directory');
+				$frameworkDirectory = $testsuite->appendChild($frameworkDirectory);
+				$frameworkDirectoryTextNode = $domDoc->createTextNode(FRAMEWORK_HOME . $testsDefaultLocation);
+				$frameworkDirectoryTextNode = $frameworkDirectory->appendChild($frameworkDirectoryTextNode);
+				
+				$moduleDirectory = $domDoc->createElement('directory');
+				$moduleDirectory = $testsuite->appendChild($moduleDirectory);
+				$moduleDirectoryTextNode = $domDoc->createTextNode(AG_MODULE_DIR . DIRECTORY_SEPARATOR . '*' . $testsDefaultLocation);
+				$moduleDirectoryTextNode = $moduleDirectory->appendChild($moduleDirectoryTextNode);
+				break;
+			case self::GENERIC_TEST :
+				$frameworkDirectory = $domDoc->createElement('directory');
+				$frameworkDirectory = $testsuite->appendChild($frameworkDirectory);
+				$frameworkDirectoryTextNode = $domDoc->createTextNode(FRAMEWORK_HOME . $testsDefaultLocation);
+				$frameworkDirectoryTextNode = $frameworkDirectory->appendChild($frameworkDirectoryTextNode);
+				
+				foreach ($this->getGenericModules() as $genericModuleNames)
+				{
+					$moduleDirectory = $domDoc->createElement('directory');
+					$moduleDirectory = $testsuite->appendChild($moduleDirectory);
+					$moduleDirectoryTextNode = $domDoc->createTextNode(AG_MODULE_DIR . DIRECTORY_SEPARATOR . $genericModuleNames . $testsDefaultLocation);
+					$moduleDirectoryTextNode = $moduleDirectory->appendChild($moduleDirectoryTextNode);
+				}
+				break;
+			case self::SPECIFIC_TEST :
+				foreach ($this->getSpecializedModules() as $specializedModuleNames)
+				{
+					$moduleDirectory = $domDoc->createElement('directory');
+					$moduleDirectory = $testsuite->appendChild($moduleDirectory);
+					$moduleDirectoryTextNode = $domDoc->createTextNode(AG_MODULE_DIR . DIRECTORY_SEPARATOR . $specializedModuleNames . $testsDefaultLocation);
+					$moduleDirectoryTextNode = $moduleDirectory->appendChild($moduleDirectoryTextNode);
+				}
+				break;
+		}
 		
 		$domDoc->save($filename);
 		
 		return $filename;
 	}
-
+	
+	/**
+	 * @return array<string, string>
+	 */
+	private function getSpecializedModules()
+	{
+		$genericModules = $this->getGenericModules();
+		$specializedModules = array();
+		foreach (ModuleService::getInstance()->getPackageNames() as $package)
+		{
+			$moduleName = ModuleService::getInstance()->getShortModuleName($package);
+			if (!isset($genericModules[$moduleName]))
+			{
+				$specializedModules[$moduleName] = $moduleName;
+			}
+		}
+		
+		return $specializedModules;
+	}
+	
+	/**
+	 * @return array<string, string>
+	 */
+	private function getGenericModules()
+	{
+		$bootstrap = $this->getParent()->getBootStrap();
+		$dependencies = $bootstrap->loadDependencies();
+		$genericModules = array();
+		foreach ($dependencies as $debType => $debs)
+		{
+			if ($debType != 'modules')
+			{
+				continue;
+			}
+			
+			foreach ($debs as $debName => $infos)
+			{
+				if ($infos['linked'])
+				{
+					$genericModules[$debName] = $debName;
+				}
+			}
+		}
+		
+		return $genericModules;
+	}
 }
