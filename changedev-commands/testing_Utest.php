@@ -11,7 +11,7 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 	 */
 	public function getUsage()
 	{
-		return "all|[<moduleName>] [<particularTest.php>] [--report [/path/to/report/]]";
+		return "all|[<moduleName>|framework [<particularTest.php> [<testName>]]] [--report [/path/to/report/]]";
 	}
 	
 	/**
@@ -20,7 +20,13 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 	 */
 	public function getDescription()
 	{
-		return "Launch unit test with PHPUnit" . PHP_EOL . "Parameters" . PHP_EOL . " * all: launch all tests" . PHP_EOL . " * moduleName : launch all tests included in the module" . PHP_EOL . " * moduleName fileName.php : launch particular test file of the module" . PHP_EOL . "Optionals" . PHP_EOL . " * --report [/path/to/report/folder/] : generate a Junit report and a PHP report" . PHP_EOL . " * --reportJunit [/path/to/report/folder/] : generate only the Junit report";
+		return "Launch unit test with PHPUnit" . PHP_EOL .
+			"Parameters" . PHP_EOL .
+			" * all: launch all tests" . PHP_EOL .
+			" * moduleName|framework [fileName.php [testName]] : launch module or framework tests, precise file name for one tests file, precise test name for one test" . PHP_EOL .
+			"Optionals" . PHP_EOL . 
+			" * --report [/path/to/report/folder/] : generate a Junit report and a PHP report" . PHP_EOL . 
+			" * --reportJunit [/path/to/report/folder/] : generate only the Junit report";
 	}
 	
 	/**
@@ -90,7 +96,10 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 		$message = '';
 		
 		$command = 'php ' . $phpunitLocation . ' ';
-		$command .= '--verbose ';
+		$switches = '--verbose ';
+		$particularTest = '';
+		$searchDirectory = '';
+		
 		if (array_key_exists('report', $options) || array_key_exists('reportJunit', $options))
 		{
 			//last params value is a valid absolute path
@@ -132,7 +141,7 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 			}
 			$reportFolder = substr($reportFolder, -1) == DIRECTORY_SEPARATOR ? $reportFolder : $reportFolder . DIRECTORY_SEPARATOR;
 			$junitReport = $reportFolder . 'junitReport_' . date('Y-m-d_H-i-s') . '.xml';
-			$command .= '--log-junit ' . $junitReport . ' ';
+			$switches .= '--log-junit ' . $junitReport . ' ';
 		}
 		
 		if (!isset($params[0]))
@@ -146,40 +155,48 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 			{
 				$message = 'Execute all unit tests included in the tests/unit folder of modules and framework.' . PHP_EOL . 'That can be very long';
 				$testsuiteFilePath = $this->generateTestSuite($testsDefaultLocation);
-				$command .= '-c ' . $testsuiteFilePath;
+				$switches .= '-c ' . $testsuiteFilePath;
 			}
 			else
 			{
 				
 				if (strtolower($params[0]) == 'framework')
 				{
-					$command .= FRAMEWORK_HOME;
+					$searchDirectory .= FRAMEWORK_HOME;
 				}
 				else
 				{
-					$command .= AG_MODULE_DIR . DIRECTORY_SEPARATOR . $params[0];
+					$searchDirectory .= AG_MODULE_DIR . DIRECTORY_SEPARATOR . $params[0];
 				}
 				
-				$command .= $testsDefaultLocation;
+				$searchDirectory .= $testsDefaultLocation;
 				
 				if (isset($params[1]))
 				{
-					
-					$command .= $params[1];
-					$message = 'Execute only the unit test of file: ' . $params[1] . ' in ' . $params[0];
+					if (isset($params[2]))
+					{
+						$switches .= '--filter ' . $params[2] . ' ';
+						$message = 'Execute only the unit test: ' . $params[2] . ' of file: ' . $params[1] . ' in ' . $params[0];
+					}
+					else
+					{
+						$message = 'Execute only the unit tests of file: ' . $params[1] . ' in ' . $params[0];
+					}
+					$searchDirectory .= $params[1];
 				}
 				else
 				{
 					$message = 'Execute all unit tests included in the tests/unit folder of ' . $params[0];
 				}
-			
 			}
 		}
+		
+		$executionCommand = $command . $switches . $searchDirectory;
 		
 		$this->message("== Utest ==");
 		$this->message($message);
 		$output = array();
-		$execution = system($command, $output);
+		$execution = system($executionCommand, $output);
 		if (array_key_exists('report', $options))
 		{
 			$this->generateReport($junitReport);
@@ -358,4 +375,5 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 		
 		return $filename;
 	}
+
 }
