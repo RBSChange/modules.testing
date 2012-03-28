@@ -146,19 +146,16 @@ class commands_testing_TestGenerator extends commands_AbstractChangeCommand
 	{
 		if (strtolower($moduleName) == 'framework')
 		{
-			return array(array('path' => FRAMEWORK_HOME, 'recursive' => 'true', 'exclude' => array('deprecated', 'doc', 'module', 'webapp', 'tests')));
+			return array(array('path' => FRAMEWORK_HOME, 'recursive' => true, 'exclude' => array('deprecated', 'doc', 'module', 'webapp', 'tests')));
 		}
 		else
 		{
 			return array(array('path' => AG_MODULE_DIR . DIRECTORY_SEPARATOR . $moduleName . DIRECTORY_SEPARATOR . 'actions'), 
-				array('path' => AG_MODULE_DIR . DIRECTORY_SEPARATOR . $moduleName . DIRECTORY_SEPARATOR . 'change-commands', 'recursive' => 'true'), 
-				array('path' => AG_MODULE_DIR . DIRECTORY_SEPARATOR . $moduleName . DIRECTORY_SEPARATOR . 'changedev-commands', 'recursive' => 'true'), 
-				array('path' => AG_MODULE_DIR . DIRECTORY_SEPARATOR . $moduleName . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR, 
-					'recursive' => 'true'), 
-				array('path' => AG_MODULE_DIR . DIRECTORY_SEPARATOR . $moduleName . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR), 
-				array(
-					'path' => AG_MODULE_DIR . DIRECTORY_SEPARATOR . $moduleName . DIRECTORY_SEPARATOR . 'persistentdocument' . DIRECTORY_SEPARATOR, 
-					'recursive' => 'true'));
+				array('path' => AG_MODULE_DIR . DIRECTORY_SEPARATOR . $moduleName . DIRECTORY_SEPARATOR . 'change-commands', 'recursive' => true), 
+				array('path' => AG_MODULE_DIR . DIRECTORY_SEPARATOR . $moduleName . DIRECTORY_SEPARATOR . 'changedev-commands', 'recursive' => true), 
+				array('path' => AG_MODULE_DIR . DIRECTORY_SEPARATOR . $moduleName . DIRECTORY_SEPARATOR . 'lib', 'recursive' => true), 
+				array('path' => AG_MODULE_DIR . DIRECTORY_SEPARATOR . $moduleName . DIRECTORY_SEPARATOR . 'views'), 
+				array('path' => AG_MODULE_DIR . DIRECTORY_SEPARATOR . $moduleName . DIRECTORY_SEPARATOR . 'persistentdocument', 'recursive' => true));
 		}
 	}
 	
@@ -173,35 +170,32 @@ class commands_testing_TestGenerator extends commands_AbstractChangeCommand
 		{
 			// directory mapping
 			$path = $pathToAnalyse['path'];
-			$ext = 'php';
-			$finder = f_util_Finder::type('file')->ignore_version_control()->name('*' . $ext);
-			// $finder->follow_link();
-			
-			// recursive mapping?
-			$recursive = ((isset($pathToAnalyse['recursive'])) ? $pathToAnalyse['recursive'] : false);
-			
-			if (!$recursive)
+			if (is_dir($path))
 			{
-				$finder->maxdepth(0);
-			}
-			
-			// exclude files or directories?
-			if (isset($pathToAnalyse['exclude']))
-			{
-				if (!is_array($pathToAnalyse['exclude']))
-				{
-					$pathToAnalyse['exclude'] = explode(',', $pathToAnalyse['exclude']);
-				}
-				$finder->prune($pathToAnalyse['exclude'])->discard($pathToAnalyse['exclude']);
-			}
-			
-			$matches = glob($path);
-			if ($matches)
-			{
-				$files = array_merge($files, $finder->in($matches));
+				$recursive = isset($pathToAnalyse['recursive']) ? $pathToAnalyse['recursive'] : false;
+				$exludeDirs = isset($pathToAnalyse['exclude']) ? $pathToAnalyse['exclude'] : array();		
+				$files = array_merge($files, $this->getPHPFiles($path, $recursive, $exludeDirs));
 			}
 		}
 		return $files;
+	}
+	
+	private function getPHPFiles($path, $recursive = true, $exludeDirs = array())
+	{
+		$result = array();
+		$di = new RecursiveDirectoryIterator($path, RecursiveDirectoryIterator::KEY_AS_PATHNAME);
+		f_PHPFileFilter::setFilters($recursive, $exludeDirs);
+		$fi = new f_PHPFileFilter($di);
+		$it = new RecursiveIteratorIterator($fi, RecursiveIteratorIterator::CHILD_FIRST);
+	
+		foreach ($it as $file => $info)
+		{
+			if ($info->isFile())
+			{
+				$result[] = $file;
+			}
+		}
+		return $result;
 	}
 	
 	/**
