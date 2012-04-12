@@ -15,7 +15,7 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 	 */
 	public function getUsage()
 	{
-		return "all|generic|specific|[<moduleName>|framework [<particularTest.php> [<testName>]]] [--report [/path/to/report/]]";
+		return "all|generic|specific|[<moduleName>|framework [<particularTest.php> [<testName>]]] [--report [/path/to/report/]]" . PHP_EOL . "Parameters" . PHP_EOL . " * all: launch all tests, generic: all generic tests (framework + modules), specific: all specialized modules" . PHP_EOL . " * moduleName|framework [fileName.php [testName]] : launch module or framework tests, precise file name for one tests file, precise test name for one test" . PHP_EOL . "Optionals" . PHP_EOL . " * --report [/path/to/report/folder/] : generate a Junit report and a PHP report" . PHP_EOL . " * --reportJunit [/path/to/report/folder/] : generate only the Junit report";
 	}
 	
 	/**
@@ -24,7 +24,7 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 	 */
 	public function getDescription()
 	{
-		return "Launch unit test with PHPUnit" . PHP_EOL . "Parameters" . PHP_EOL . " * all: launch all tests, generic: all generic tests (framework + modules), specific: all specialized modules" . PHP_EOL . " * moduleName|framework [fileName.php [testName]] : launch module or framework tests, precise file name for one tests file, precise test name for one test" . PHP_EOL . "Optionals" . PHP_EOL . " * --report [/path/to/report/folder/] : generate a Junit report and a PHP report" . PHP_EOL . " * --reportJunit [/path/to/report/folder/] : generate only the Junit report";
+		return "Launch unit test with PHPUnit";
 	}
 	
 	/**
