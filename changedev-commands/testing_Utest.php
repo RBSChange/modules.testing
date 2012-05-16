@@ -15,7 +15,7 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 	 */
 	public function getUsage()
 	{
-		return "all|generic|specific|[<moduleName>|framework [<particularTest.php> [<testName>]]] [--report [/path/to/report/]]" . PHP_EOL . "Parameters" . PHP_EOL . " * all: launch all tests, generic: all generic tests (framework + modules), specific: all specialized modules" . PHP_EOL . " * moduleName|framework [fileName.php [testName]] : launch module or framework tests, precise file name for one tests file, precise test name for one test" . PHP_EOL . "Optionals" . PHP_EOL . " * --report [/path/to/report/folder/] : generate a Junit report and a PHP report" . PHP_EOL . " * --reportJunit [/path/to/report/folder/] : generate only the Junit report";
+		return "[--scope=(all|generic|specific)|<moduleName>|framework [<particularTest.php> [<testName>]]] [--report [/path/to/report/]]" . PHP_EOL . "Parameters" . PHP_EOL . " * --scope=all: launch all tests, generic: all generic tests (framework + modules), --scope=specific: all specialized modules" . PHP_EOL . " * moduleName|framework [fileName.php [testName]] : launch module or framework tests, precise file name for one tests file, precise test name for one test" . PHP_EOL . "Optionals" . PHP_EOL . " * --report [/path/to/report/folder/] : generate a Junit report and a PHP report" . PHP_EOL . " * --reportJunit [/path/to/report/folder/] : generate only the Junit report";
 	}
 	
 	/**
@@ -62,7 +62,7 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 	 */
 	protected function validateArgs($params, $options)
 	{
-		return (count($params) > 0);
+		return (count($params) > 0) || count($options > 0);
 	}
 	
 	/**
@@ -71,7 +71,7 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 	 */
 	public function getOptions()
 	{
-		return array('--report', '--reportJunit');
+		return array('--report', '--reportJunit', '--scope');
 	}
 	
 	/**
@@ -85,11 +85,11 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 	{
 		
 		// Starts the framework
-		require_once WEBEDIT_HOME . "/framework/Framework.php";
+		require_once f_util_FileUtils::buildFrameworkPath('Framework.php');
 		
 		// Location of the test from module name to the unit tests folder
-		$testsDefaultLocation = DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'unit' . DIRECTORY_SEPARATOR;
-		$phpunitLocation = WEBEDIT_HOME . DIRECTORY_SEPARATOR . 'changePHPUnit.php';
+		$testsDefaultLocation = DIRECTORY_SEPARATOR . f_util_FileUtils::buildRelativePath('tests', 'unit') . DIRECTORY_SEPARATOR;
+		$phpunitLocation = f_util_FileUtils::buildWebeditPath('changePHPUnit.php');
 		
 		$message = '';
 		
@@ -142,64 +142,129 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 			$switches .= '--log-junit ' . $junitReport . ' ';
 		}
 		
-		if (!isset($params[0]))
+		if (isset($params[0]))
 		{
-			$this->quitError('Bad parameter give to the command, see the help: ');
-			$this->message($this->getUsage());
-		}
-		else
-		{
-			if (strtolower($params[0]) == 'generic')
+			if (strtolower($params[0]) == 'framework')
 			{
-				$message = 'Execute all unit tests included in the tests/unit folder of modules and framework.' . PHP_EOL . 'That can be very long';
-				$testsuiteFilePath = $this->generateTestSuite($testsDefaultLocation, self::GENERIC_TEST);
-				$switches .= '-c ' . $testsuiteFilePath;
-			}
-			else if (strtolower($params[0]) == 'all')
-			{
-				$message = 'Execute all unit tests included in the tests/unit folder of modules and framework. That can be very long';
-				$testsuiteFilePath = $this->generateTestSuite($testsDefaultLocation, self::ALL_TEST);
-				$switches .= '-c ' . $testsuiteFilePath;
-			}
-			else if (strtolower($params[0]) == 'specific')
-			{
-				$message = 'Execute all unit tests included in the tests/unit folder of your specialized modules. That can be very long';
-				$testsuiteFilePath = $this->generateTestSuite($testsDefaultLocation, self::SPECIFIC_TEST);
-				$switches .= '-c ' . $testsuiteFilePath;
+				$searchDirectory .= FRAMEWORK_HOME;
 			}
 			else
 			{
-				
-				if (strtolower($params[0]) == 'framework')
+				$searchDirectory .= AG_MODULE_DIR . DIRECTORY_SEPARATOR . $params[0];
+			}
+
+			$searchDirectory .= $testsDefaultLocation;
+
+			if (isset($params[1]))
+			{
+				if (isset($params[2]))
 				{
-					$searchDirectory .= FRAMEWORK_HOME;
+					$switches .= '--filter ' . $params[2] . ' ';
+					$message = 'Execute only the unit test: ' . $params[2] . ' of file: ' . $params[1] . ' in ' . $params[0];
 				}
 				else
 				{
-					$searchDirectory .= AG_MODULE_DIR . DIRECTORY_SEPARATOR . $params[0];
+					$message = 'Execute only the unit tests of file: ' . $params[1] . ' in ' . $params[0];
 				}
-				
-				$searchDirectory .= $testsDefaultLocation;
-				
-				if (isset($params[1]))
-				{
-					if (isset($params[2]))
-					{
-						$switches .= '--filter ' . $params[2] . ' ';
-						$message = 'Execute only the unit test: ' . $params[2] . ' of file: ' . $params[1] . ' in ' . $params[0];
-					}
-					else
-					{
-						$message = 'Execute only the unit tests of file: ' . $params[1] . ' in ' . $params[0];
-					}
-					$searchDirectory .= $params[1];
-				}
-				else
-				{
-					$message = 'Execute all unit tests included in the tests/unit folder of ' . $params[0];
-				}
+				$searchDirectory .= $params[1];
+			}
+			else
+			{
+				$message = 'Execute all unit tests included in the tests/unit folder of ' . $params[0];
 			}
 		}
+		else
+		{
+			if (isset($options['scope']))
+			{
+				switch ($options['scope'])
+				{
+					case 'generic':
+						$message = 'Execute all unit tests included in the tests/unit folder of generic modules and framework.' . PHP_EOL . 'That can be very long';
+						$testsuiteFilePath = $this->generateTestSuite($testsDefaultLocation, self::GENERIC_TEST);
+						$switches .= '-c ' . $testsuiteFilePath;
+						break;
+					case 'all':
+						$message = 'Execute all unit tests included in the tests/unit folder of modules and framework. That can be very long';
+						$testsuiteFilePath = $this->generateTestSuite($testsDefaultLocation, self::ALL_TEST);
+						$switches .= '-c ' . $testsuiteFilePath;
+						break;
+					case 'specific':
+						$message = 'Execute all unit tests included in the tests/unit folder of your specialized modules. That can be very long';
+						$testsuiteFilePath = $this->generateTestSuite($testsDefaultLocation, self::SPECIFIC_TEST);
+						$switches .= '-c ' . $testsuiteFilePath;
+						break;
+					default:
+						$this->errorMessage('your scope choice is wrong');
+						$this->message($this->getUsage());
+						exit();
+				}
+			}
+			else
+			{
+				$this->message($this->getUsage());
+				exit();
+			}
+		}
+		
+// 		if (!isset($params[0]))
+// 		{
+// 			$this->quitError('Bad parameter give to the command, see the help: ');
+// 			$this->message($this->getUsage());
+// 		}
+// 		else
+// 		{
+// 			if (strtolower($params[0]) == 'generic')
+// 			{
+// 				$message = 'Execute all unit tests included in the tests/unit folder of generic modules and framework.' . PHP_EOL . 'That can be very long';
+// 				$testsuiteFilePath = $this->generateTestSuite($testsDefaultLocation, self::GENERIC_TEST);
+// 				$switches .= '-c ' . $testsuiteFilePath;
+// 			}
+// 			else if (strtolower($params[0]) == 'all')
+// 			{
+// 				$message = 'Execute all unit tests included in the tests/unit folder of modules and framework. That can be very long';
+// 				$testsuiteFilePath = $this->generateTestSuite($testsDefaultLocation, self::ALL_TEST);
+// 				$switches .= '-c ' . $testsuiteFilePath;
+// 			}
+// 			else if (strtolower($params[0]) == 'specific')
+// 			{
+// 				$message = 'Execute all unit tests included in the tests/unit folder of your specialized modules. That can be very long';
+// 				$testsuiteFilePath = $this->generateTestSuite($testsDefaultLocation, self::SPECIFIC_TEST);
+// 				$switches .= '-c ' . $testsuiteFilePath;
+// 			}
+// 			else
+// 			{
+				
+// 				if (strtolower($params[0]) == 'framework')
+// 				{
+// 					$searchDirectory .= FRAMEWORK_HOME;
+// 				}
+// 				else
+// 				{
+// 					$searchDirectory .= AG_MODULE_DIR . DIRECTORY_SEPARATOR . $params[0];
+// 				}
+				
+// 				$searchDirectory .= $testsDefaultLocation;
+				
+// 				if (isset($params[1]))
+// 				{
+// 					if (isset($params[2]))
+// 					{
+// 						$switches .= '--filter ' . $params[2] . ' ';
+// 						$message = 'Execute only the unit test: ' . $params[2] . ' of file: ' . $params[1] . ' in ' . $params[0];
+// 					}
+// 					else
+// 					{
+// 						$message = 'Execute only the unit tests of file: ' . $params[1] . ' in ' . $params[0];
+// 					}
+// 					$searchDirectory .= $params[1];
+// 				}
+// 				else
+// 				{
+// 					$message = 'Execute all unit tests included in the tests/unit folder of ' . $params[0];
+// 				}
+// 			}
+// 		}
 		
 		$executionCommand = $command . $switches . $searchDirectory;
 		
@@ -401,12 +466,21 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 				}
 				break;
 			case self::SPECIFIC_TEST :
-				foreach ($this->getSpecializedModules() as $specializedModuleNames)
+				$specializedModules = $this->getSpecializedModules();
+				if (count($specializedModules) > 0)
 				{
-					$moduleDirectory = $domDoc->createElement('directory');
-					$moduleDirectory = $testsuite->appendChild($moduleDirectory);
-					$moduleDirectoryTextNode = $domDoc->createTextNode(AG_MODULE_DIR . DIRECTORY_SEPARATOR . $specializedModuleNames . $testsDefaultLocation);
-					$moduleDirectoryTextNode = $moduleDirectory->appendChild($moduleDirectoryTextNode);
+					foreach ($specializedModules as $specializedModuleNames)
+					{
+						$moduleDirectory = $domDoc->createElement('directory');
+						$moduleDirectory = $testsuite->appendChild($moduleDirectory);
+						$moduleDirectoryTextNode = $domDoc->createTextNode(AG_MODULE_DIR . DIRECTORY_SEPARATOR . $specializedModuleNames . $testsDefaultLocation);
+						$moduleDirectoryTextNode = $moduleDirectory->appendChild($moduleDirectoryTextNode);
+					}
+				}
+				else
+				{
+					$this->errorMessage('There is any specific module in your modules folder');
+					exit();
 				}
 				break;
 		}
