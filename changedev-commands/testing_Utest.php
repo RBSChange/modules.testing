@@ -207,65 +207,6 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 			}
 		}
 		
-// 		if (!isset($params[0]))
-// 		{
-// 			$this->quitError('Bad parameter give to the command, see the help: ');
-// 			$this->message($this->getUsage());
-// 		}
-// 		else
-// 		{
-// 			if (strtolower($params[0]) == 'generic')
-// 			{
-// 				$message = 'Execute all unit tests included in the tests/unit folder of generic modules and framework.' . PHP_EOL . 'That can be very long';
-// 				$testsuiteFilePath = $this->generateTestSuite($testsDefaultLocation, self::GENERIC_TEST);
-// 				$switches .= '-c ' . $testsuiteFilePath;
-// 			}
-// 			else if (strtolower($params[0]) == 'all')
-// 			{
-// 				$message = 'Execute all unit tests included in the tests/unit folder of modules and framework. That can be very long';
-// 				$testsuiteFilePath = $this->generateTestSuite($testsDefaultLocation, self::ALL_TEST);
-// 				$switches .= '-c ' . $testsuiteFilePath;
-// 			}
-// 			else if (strtolower($params[0]) == 'specific')
-// 			{
-// 				$message = 'Execute all unit tests included in the tests/unit folder of your specialized modules. That can be very long';
-// 				$testsuiteFilePath = $this->generateTestSuite($testsDefaultLocation, self::SPECIFIC_TEST);
-// 				$switches .= '-c ' . $testsuiteFilePath;
-// 			}
-// 			else
-// 			{
-				
-// 				if (strtolower($params[0]) == 'framework')
-// 				{
-// 					$searchDirectory .= FRAMEWORK_HOME;
-// 				}
-// 				else
-// 				{
-// 					$searchDirectory .= AG_MODULE_DIR . DIRECTORY_SEPARATOR . $params[0];
-// 				}
-				
-// 				$searchDirectory .= $testsDefaultLocation;
-				
-// 				if (isset($params[1]))
-// 				{
-// 					if (isset($params[2]))
-// 					{
-// 						$switches .= '--filter ' . $params[2] . ' ';
-// 						$message = 'Execute only the unit test: ' . $params[2] . ' of file: ' . $params[1] . ' in ' . $params[0];
-// 					}
-// 					else
-// 					{
-// 						$message = 'Execute only the unit tests of file: ' . $params[1] . ' in ' . $params[0];
-// 					}
-// 					$searchDirectory .= $params[1];
-// 				}
-// 				else
-// 				{
-// 					$message = 'Execute all unit tests included in the tests/unit folder of ' . $params[0];
-// 				}
-// 			}
-// 		}
-		
 		$executionCommand = $command . $switches . $searchDirectory;
 		
 		$this->message("== Utest ==");
