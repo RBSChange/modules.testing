@@ -71,7 +71,7 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 	 */
 	public function getOptions()
 	{
-		return array('--report', '--reportJunit', '--scope');
+		return array('--report', '--reportJunit', '--scope', '--verbose');
 	}
 	
 	/**
@@ -205,6 +205,11 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 				$this->message($this->getUsage());
 				exit();
 			}
+		}
+		
+		if (isset($options['verbose']))
+		{
+			$switches .= '--debug ';
 		}
 		
 		$executionCommand = $command . $switches . $searchDirectory;
