@@ -84,16 +84,13 @@ class commands_testing_TestGenerator extends commands_AbstractChangeCommand
 		
 		$this->message("== TestGenerator ==");
 		$verbose = array_key_exists('verbose', $options);
-		
-		// Starts the framework
-		require_once WEBEDIT_HOME . "/framework/Framework.php";
+		$this->loadFramework();
 		$classFound = array();
 		$pathsToAnalyse = $this->getPathsToAnalyse($moduleName);
 		
 		$files = $this->getFiles($pathsToAnalyse);
 		
 		$testInfos = array();
-		
 		foreach ($files as $file)
 		{
 			if ($verbose)
@@ -116,23 +113,26 @@ class commands_testing_TestGenerator extends commands_AbstractChangeCommand
 					}
 				}
 			}
-			
-			$testInfos = array_merge($testInfos, $this->getTestInfos($definedClasses, $moduleName, $verbose));
+			$testInfos = array_merge($testInfos, $this->getTestInfos($definedClasses, $file, $verbose));
 		}
-		$this->generateTest($testInfos, $moduleName);
 		
+		$this->generateTest($testInfos);
+
 		$this->message('');
 		$result = '';
-		
-		foreach ($testInfos as $class => $methods)
+		foreach ($testInfos as $class => $testInfo)
 		{
-			$countMethods = is_array($methods) ? count($methods) : count($this->getPublicAndNoneHeritedMethods($class));
-						
-			$pathToTestClassFile = $this->getDefaultUnitTestFolder($moduleName) . $class . 'Test.php';
-			$result .= $class . PHP_EOL . '	in file: ' . $pathToTestClassFile . PHP_EOL . '	has been ';
-			$result .= is_array($methods) ? 'modified' : 'created';
-			$result .= ' with ' . $countMethods . ' methods to edit';
-			$result .= PHP_EOL;
+			if (isset($testInfo['methods']))
+			{
+				$methods = $testInfo['methods'];
+				$file = $testInfo['file'];
+				$countMethods = is_array($methods) ? count($methods) : count($this->getPublicAndNoneHeritedMethods($class));
+							
+				$result .= $class . PHP_EOL . '	in file: ' . $file . PHP_EOL . '	has been ';
+				$result .= is_array($methods) ? 'modified' : 'created';
+				$result .= ' with ' . $countMethods . ' methods to edit';
+				$result .= PHP_EOL;
+			}
 		}
 		$this->message($result);
 		$this->quitOk("Command successfully executed");
@@ -200,15 +200,15 @@ class commands_testing_TestGenerator extends commands_AbstractChangeCommand
 	
 	/**
 	 *
-	 * @param $definedClasses string[]       	
-	 * @param $moduleName string       	
-	 * @param $verbose boolean       	
-	 * @return array<string $class, string $noMethods | string[] $methods>
+	 * @param string[] $definedClasses
+	 * @param string $file
+	 * @param boolean $verbose
+	 * @return array< string $class, 'methods' => string $noMethods | string[] $methods, 'file' => string>
 	 */
-	private function getTestInfos($definedClasses, $moduleName, $verbose = false)
+	private function getTestInfos($definedClasses, $file, $verbose = false)
 	{
 		$result = array();
-		$defaultUnitTestFolder = $this->getDefaultUnitTestFolder($moduleName);
+		$defaultUnitTestFolder = $this->getUnitTestFolder($file);
 		foreach ($definedClasses as $class)
 		{
 			if ($verbose)
@@ -219,7 +219,8 @@ class commands_testing_TestGenerator extends commands_AbstractChangeCommand
 			$methods = $this->getPublicAndNoneHeritedMethods($class);
 			$testFile = $class . 'Test.php';
 			$testClass = $class . 'Test';
-			$testFilePath = $defaultUnitTestFolder . $testFile;
+			$testFilePath = $defaultUnitTestFolder . DIRECTORY_SEPARATOR . $testFile;
+			$result[$class]['file'] = $testFilePath;
 			if (file_exists($testFilePath))
 			{
 				if ($verbose)
@@ -250,7 +251,11 @@ class commands_testing_TestGenerator extends commands_AbstractChangeCommand
 					}
 					else
 					{
-						$result[$class][] = $method;
+						if (!isset($result[$class]['methods']))
+						{
+							$result[$class]['methods'] = array();
+						}
+						$result[$class]['methods'][] = $method;
 						if ($verbose)
 						{
 							$this->warnMessage('		Method: ' . $method . ' isn\'t tested');
@@ -261,52 +266,51 @@ class commands_testing_TestGenerator extends commands_AbstractChangeCommand
 			else
 			{
 				$this->errorMessage('	test file doesn\'t exist for the class: ' . $class);
-				$result[$class] = 'noMethods';
+				$result[$class]['methods'] = 'noMethods';
 			}
 		}
 		return $result;
 	}
 	
 	/**
-	 *
-	 * @param $moduleName string       	
+	 * For example: $file = WEBEDIT_HOME/modules/catalog/lib/bin/testTest.php
+	 * returns WEBEDIT_HOME/modules/testing/testunit/catalog/lib/bin
+	 * @param string $folders
 	 * @return string
 	 */
-	private function getDefaultUnitTestFolder($moduleName)
+	private function getUnitTestFolder($file)
 	{
-		$defaultUnitTestFolder = '';
-		if (strtolower($moduleName) == 'framework')
-		{
-			$defaultUnitTestFolder .= FRAMEWORK_HOME;
-		}
-		else
-		{
-			$defaultUnitTestFolder = AG_MODULE_DIR . DIRECTORY_SEPARATOR . $moduleName;
-		}
-		return $defaultUnitTestFolder . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'unit' . DIRECTORY_SEPARATOR;
+		$folders = dirname(substr($file, strlen(WEBEDIT_HOME) + 1));
+		return f_util_FileUtils::buildAbsolutePath(AG_MODULE_DIR, 'testing', 'testunit', $folders);
 	}
 	
 	/**
 	 * 
-	 * @param array<string $class, string $noMethods | string[] $methods> $testInfos
+	 * @param array<string $class, 'methods' => 'noMethods' | string[] $methods, 'file' => string>  $testInfos
 	 */
-	private function generateTest($testInfos, $moduleName)
+	private function generateTest($testInfos)
 	{
-		$defaultUnitTestFolder = $this->getDefaultUnitTestFolder($moduleName);
 		foreach ($testInfos as $class => $testInfo)
 		{
-			$testFilePath = $defaultUnitTestFolder . $class . 'Test.php';
-			if (is_array($testInfo))
+			$unitTestFolder = dirname($testInfo['file']);
+			
+			$testFilePath = $testInfo['file'];
+			
+			if (isset($testInfo['methods']) && is_array($testInfo['methods']))
 			{
-				$this->generateTestMethods($testInfo, $class, $testFilePath);
+				$this->generateTestMethods($testInfo['methods'], $class, $testFilePath);
+			}
+			else if (file_exists($testFilePath))
+			{
+				$this->okMessage($class . ' exists and has no test methods to add');
 			}
 			else
 			{
 				try
 				{
-					if (!file_exists($defaultUnitTestFolder))
+					if (!file_exists($unitTestFolder))
 					{
-						mkdir($defaultUnitTestFolder, 0777, true);
+						mkdir($unitTestFolder, 0777, true);
 					}
 						
 					$classtest = $class . 'Test';
@@ -340,7 +344,7 @@ class commands_testing_TestGenerator extends commands_AbstractChangeCommand
 		
 					f_util_FileUtils::write($testFilePath, $result);
 					
-					$this->okMessage('Test file: ' .  $class . 'Test.php was created at ' . $defaultUnitTestFolder);
+					$this->okMessage('Test file: ' .  $class . 'Test.php was created at ' . $unitTestFolder);
 					
 					$methods = $this->getPublicAndNoneHeritedMethods($class);
 					$this->generateTestMethods($methods, $class, $testFilePath);

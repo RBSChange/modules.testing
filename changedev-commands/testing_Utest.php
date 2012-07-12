@@ -15,7 +15,7 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 	 */
 	public function getUsage()
 	{
-		return "[--scope=(all|generic|specific)|<moduleName>|framework [<particularTest.php> [<testName>]]] [--report [/path/to/report/]]" . PHP_EOL . "Parameters" . PHP_EOL . " * --scope=all: launch all tests, generic: all generic tests (framework + modules), --scope=specific: all specialized modules" . PHP_EOL . " * moduleName|framework [fileName.php [testName]] : launch module or framework tests, precise file name for one tests file, precise test name for one test" . PHP_EOL . "Optionals" . PHP_EOL . " * --report [/path/to/report/folder/] : generate a Junit report and a PHP report" . PHP_EOL . " * --reportJunit [/path/to/report/folder/] : generate only the Junit report";
+		return "[--scope=(all|generic|specific)|<moduleName>|framework [<path/to/your/particularTest.php> [<testName>]]] [--report [/path/to/report/]]" . PHP_EOL . "Parameters" . PHP_EOL . " * --scope=all: launch all tests, generic: all generic tests (framework + modules), --scope=specific: all specialized modules" . PHP_EOL . " * moduleName|framework [fileName.php [testName]] : launch module or framework tests, precise a path to file for one tests file, precise test name for one test" . PHP_EOL . "Optionals" . PHP_EOL . " * --report [/path/to/report/folder/] : generate a Junit report and a PHP report" . PHP_EOL . " * --reportJunit [/path/to/report/folder/] : generate only the Junit report";
 	}
 	
 	/**
@@ -88,7 +88,7 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 		require_once f_util_FileUtils::buildFrameworkPath('Framework.php');
 		
 		// Location of the test from module name to the unit tests folder
-		$testsDefaultLocation = DIRECTORY_SEPARATOR . f_util_FileUtils::buildRelativePath('tests', 'unit') . DIRECTORY_SEPARATOR;
+		$testsDefaultLocation = f_util_FileUtils::buildAbsolutePath(AG_MODULE_DIR, 'testing', 'testunit');
 		$phpunitLocation = f_util_FileUtils::buildWebeditPath('changePHPUnit.php');
 		
 		$message = '';
@@ -146,14 +146,12 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 		{
 			if (strtolower($params[0]) == 'framework')
 			{
-				$searchDirectory .= FRAMEWORK_HOME;
+				$searchDirectory = $testsDefaultLocation . DIRECTORY_SEPARATOR . 'framework';
 			}
 			else
 			{
-				$searchDirectory .= AG_MODULE_DIR . DIRECTORY_SEPARATOR . $params[0];
+				$searchDirectory = $testsDefaultLocation . DIRECTORY_SEPARATOR . 'modules' . DIRECTORY_SEPARATOR . $params[0];
 			}
-
-			$searchDirectory .= $testsDefaultLocation;
 
 			if (isset($params[1]))
 			{
@@ -166,7 +164,7 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 				{
 					$message = 'Execute only the unit tests of file: ' . $params[1] . ' in ' . $params[0];
 				}
-				$searchDirectory .= $params[1];
+				$searchDirectory .= DIRECTORY_SEPARATOR . $params[1];
 			}
 			else
 			{
@@ -213,6 +211,8 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 		}
 		
 		$executionCommand = $command . $switches . $searchDirectory;
+		
+		echo PHP_EOL . $executionCommand . PHP_EOL;
 		
 		$this->message("== Utest ==");
 		$this->message($message);
@@ -389,25 +389,21 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 			case self::ALL_TEST :
 				$frameworkDirectory = $domDoc->createElement('directory');
 				$frameworkDirectory = $testsuite->appendChild($frameworkDirectory);
-				$frameworkDirectoryTextNode = $domDoc->createTextNode(FRAMEWORK_HOME . $testsDefaultLocation);
+				$frameworkDirectoryTextNode = $domDoc->createTextNode($testsDefaultLocation . DIRECTORY_SEPARATOR . '*');
 				$frameworkDirectoryTextNode = $frameworkDirectory->appendChild($frameworkDirectoryTextNode);
 				
-				$moduleDirectory = $domDoc->createElement('directory');
-				$moduleDirectory = $testsuite->appendChild($moduleDirectory);
-				$moduleDirectoryTextNode = $domDoc->createTextNode(AG_MODULE_DIR . DIRECTORY_SEPARATOR . '*' . $testsDefaultLocation);
-				$moduleDirectoryTextNode = $moduleDirectory->appendChild($moduleDirectoryTextNode);
 				break;
 			case self::GENERIC_TEST :
 				$frameworkDirectory = $domDoc->createElement('directory');
 				$frameworkDirectory = $testsuite->appendChild($frameworkDirectory);
-				$frameworkDirectoryTextNode = $domDoc->createTextNode(FRAMEWORK_HOME . $testsDefaultLocation);
+				$frameworkDirectoryTextNode = $domDoc->createTextNode($testsDefaultLocation . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . '*');
 				$frameworkDirectoryTextNode = $frameworkDirectory->appendChild($frameworkDirectoryTextNode);
 				
 				foreach ($this->getGenericModules() as $genericModuleNames)
 				{
 					$moduleDirectory = $domDoc->createElement('directory');
 					$moduleDirectory = $testsuite->appendChild($moduleDirectory);
-					$moduleDirectoryTextNode = $domDoc->createTextNode(AG_MODULE_DIR . DIRECTORY_SEPARATOR . $genericModuleNames . $testsDefaultLocation);
+					$moduleDirectoryTextNode = $domDoc->createTextNode($testsDefaultLocation . DIRECTORY_SEPARATOR . 'modules' . DIRECTORY_SEPARATOR . $genericModuleNames . DIRECTORY_SEPARATOR . '*');
 					$moduleDirectoryTextNode = $moduleDirectory->appendChild($moduleDirectoryTextNode);
 				}
 				break;
@@ -419,7 +415,7 @@ class commands_testing_Utest extends commands_AbstractChangeCommand
 					{
 						$moduleDirectory = $domDoc->createElement('directory');
 						$moduleDirectory = $testsuite->appendChild($moduleDirectory);
-						$moduleDirectoryTextNode = $domDoc->createTextNode(AG_MODULE_DIR . DIRECTORY_SEPARATOR . $specializedModuleNames . $testsDefaultLocation);
+						$moduleDirectoryTextNode = $domDoc->createTextNode($testsDefaultLocation . DIRECTORY_SEPARATOR . 'modules' . DIRECTORY_SEPARATOR . $specializedModuleNames . DIRECTORY_SEPARATOR . '*');
 						$moduleDirectoryTextNode = $moduleDirectory->appendChild($moduleDirectoryTextNode);
 					}
 				}
