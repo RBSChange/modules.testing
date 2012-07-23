@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<script>
+	<binding fileName="modules/generic/persistentdocument/import/generic_binding.xml" />
+	<binding fileName="modules/catalog/persistentdocument/import/catalog_binding.xml" />
+	
+	<rootfolder module="catalog">
+		<topshelf byLabel="TopShelf1" codeReference="TOP-SHELF-1" id="TopShelf1">
+			<shelf byLabel="shelf1" codeReference="SHELF-1" id="shelf1" />
+			<shelf byLabel="shelf2" codeReference="SHELF-2" id="shelf2" />
+		</topshelf>
+	</rootfolder>
+	<shop byCodeReference="DEMO" id="test" topShelf-refids="TopShelf1" />
+</script>
