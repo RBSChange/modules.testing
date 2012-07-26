@@ -170,5 +170,14 @@ class testing_IntegrationTestBase extends testing_UnitTestBase
 			$this->fail('Did you call: ' . __METHOD__ . ' in your test without calling getLogs in your setUp?');
 		}
 	}
+	
+	/**
+	 * Usefull when a document need to be refreshed
+	 */
+	protected function refreshCache()
+	{
+		f_persistentdocument_PersistentProvider::getInstance()->setDocumentCache(false);
+		f_persistentdocument_PersistentProvider::getInstance()->setDocumentCache(true);
+	}
 }
 

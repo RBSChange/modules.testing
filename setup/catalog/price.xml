@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<script>
+	<binding fileName="modules/generic/persistentdocument/import/generic_binding.xml" />
+	<binding fileName="modules/catalog/persistentdocument/import/catalog_binding.xml" />
+
+	<simpleproduct	codeReference="SIMPLEPRODUCT-1" label="Product-1" id="SIMPLEPRODUCT-1" />
+	<simpleproduct	codeReference="SIMPLEPRODUCT-2" label="Product-2" id="SIMPLEPRODUCT-2" />
+	<simpleproduct	codeReference="SIMPLEPRODUCT-3" label="Product-3" id="SIMPLEPRODUCT-3" />
+	<declinedproduct	codeReference="DECLINED-SYNCHRONIZED" label="Declined-synchronized" synchronizePrices="true" id ="DECLINED-SYNCHRONIZED">
+		<productdeclination codeReference="DECLINATION-1-SYNCHRONIZED" label="Declination-1-synchronized" id="DECLINATION-1-SYNCHRONIZED" />
+		<productdeclination codeReference="DECLINATION-2-SYNCHRONIZED" label="Declination-2-synchronized" id="DECLINATION-2-SYNCHRONIZED" />
+		<productdeclination codeReference="DECLINATION-3-SYNCHRONIZED" label="Declination-3-synchronized" id="DECLINATION-3-SYNCHRONIZED" />
+		<productdeclination codeReference="DECLINATION-4-SYNCHRONIZED" label="Declination-4-synchronized" id="DECLINATION-4-SYNCHRONIZED" />
+	</declinedproduct>
+	<declinedproduct	codeReference="DECLINED-UNSYNCHRONIZED" label="Declined-unsynchronized" synchronizePrices="false" id="DECLINED-UNSYNCHRONIZED" >
+		<productdeclination codeReference="DECLINATION-1-UNSYNCHRONIZED" label="Declination-1-unsynchronized" id="DECLINATION-1-UNSYNCHRONIZED" />
+		<productdeclination codeReference="DECLINATION-2-UNSYNCHRONIZED" label="Declination-2-unsynchronized" id="DECLINATION-2-UNSYNCHRONIZED" />
+		<productdeclination codeReference="DECLINATION-3-UNSYNCHRONIZED" label="Declination-3-unsynchronized" id="DECLINATION-3-UNSYNCHRONIZED" />
+		<productdeclination codeReference="DECLINATION-4-UNSYNCHRONIZED" label="Declination-4-unsynchronized" id="DECLINATION-4-UNSYNCHRONIZED" />
+	</declinedproduct>
+	
+	<kit byCodeReference="KIT-1" label="Kit-1">
+		<kititem product-refid="SIMPLEPRODUCT-1" quantity="4" />
+		<kititem product-refid="SIMPLEPRODUCT-2" quantity="3" />
+		<kititem product-refid="SIMPLEPRODUCT-3" quantity="2" />
+		<kititem product-refid="DECLINATION-1-SYNCHRONIZED" quantity="2" />
+		<kititem product-refid="DECLINATION-2-UNSYNCHRONIZED" quantity="4" declinable="true" />
+		<kititem product-refid="DECLINATION-2-SYNCHRONIZED" quantity="2" />
+	</kit>
+</script>

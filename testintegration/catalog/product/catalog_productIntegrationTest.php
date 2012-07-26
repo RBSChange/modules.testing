@@ -56,26 +56,6 @@ class catalog_productIntegrationTest extends testing_IntegrationTestBase
 	
 	/**
 	 * @depends testCreationOfSimpleProduct
-	 * @throws Exception
-	 */
-	public function testCreatePriceForProduct()
-	{
-		$price = catalog_persistentdocument_price::getNewInstance();
-		$shop = catalog_ShopService::getInstance()->getDefaultShop();
-		$price->setShopId($shop->getId());
-		$price->setBillingAreaId($shop->getDefaultBillingArea()->getId());
-		$price->setValueWithoutTax(50.0);
-		$price->setProductId($this->simpleProduct->getId());
-		$price->save();
-			
-		$testedProduct = catalog_persistentdocument_simpleproduct::getInstanceById($this->simpleProduct->getId());
-		$ps = catalog_PriceService::getInstance();
-		$this->assertEquals(50.0, $price->getValueWithoutTax());
-		$this->compareLogs();
-	}
-	
-	/**
-	 * @depends testCreationOfSimpleProduct
 	 * @expectedException			BaseException
 	 * @expectedExceptionMessage	object-not-found
 	 */
@@ -99,12 +79,13 @@ class catalog_productIntegrationTest extends testing_IntegrationTestBase
 			->findUnique();
 		$this->assertNull($shelf1, 'If a shelf named SHELF-1 exists it means that your database is corrupted,' .
 			'Please reset your database manually');
-		
-		$this->importSample('catalogTest1.xml');
+
+		$this->importSample('catalog/product.xml');
+
 		$shelf1 = catalog_ShelfService::getInstance()->createQuery()
 			->add(Restrictions::eq('codeReference', 'SHELF-1'))
 			->findUnique();
-		$this->assertNotNull($shelf1);
+		$this->assertInstanceOf('catalog_persistentdocument_shelf' ,$shelf1);
 		$this->assertEquals('shelf1', $shelf1->getLabel());
 
 		$this->simpleProduct->addShelf($shelf1);
@@ -117,7 +98,7 @@ class catalog_productIntegrationTest extends testing_IntegrationTestBase
 		$shelf2 = catalog_ShelfService::getInstance()->createQuery()
 			->add(Restrictions::eq('codeReference', 'SHELF-2'))
 			->findUnique();
-		$this->assertNotNull($shelf2);
+		$this->assertInstanceOf('catalog_persistentdocument_shelf', $shelf2);
 		$this->assertEquals('shelf2', $shelf2->getLabel());
 		
 		$this->simpleProduct->addShelf($shelf2);

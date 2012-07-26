@@ -13,7 +13,8 @@ class commands_testing_Itest extends commands_testing_Utest
 		return "iTestFolder [<path/to/your/particularTest.php> [<testName>]] [--report [/path/to/report/]]" . PHP_EOL . 
 			" * --all execute all integration test" . PHP_EOL .
 			" * --report [/path/to/report/folder/] generate a Junit report and a PHP report" . PHP_EOL .
- 			" * --reportJunit [/path/to/report/folder/] generate only the Junit report";
+ 			" * --reportJunit [/path/to/report/folder/] generate only the Junit report" . PHP_EOL .
+			" * --rdb reset the database and import minimal samples to doing Integrations tests";
 	}
 
 	/**
@@ -62,7 +63,7 @@ class commands_testing_Itest extends commands_testing_Utest
 	 */
 	public function getOptions()
 	{
-		return array('--report', '--reportJunit', '--verbose', '--all');
+		return array('--report', '--reportJunit', '--verbose', '--all', '--rdb');
 	}
 
 	/**
@@ -75,6 +76,22 @@ class commands_testing_Itest extends commands_testing_Utest
 		// Starts the framework
 		$this->loadFramework();
 
+		//contraints
+		//Any cache must be activate
+		if (CHANGE4_CACHE_SERVICE_CLASS != 'f_persistentdocument_NoopCacheService')
+		{
+			$this->quitError(('Any cache must be activate, change your config before executing integration tests.' . 
+				' Change the value of CHANGE4_CACHE_SERVICE_CLASS to "f_persistentdocument_NoopCacheService"'));
+			return;
+		}
+		
+		if (array_key_exists('rdb', $options))
+		{
+			$this->getParent()->executeCommand('reset-database');
+			$this->getParent()->executeCommand('sample.import', array('website/sample.xml'));
+			$this->getParent()->executeCommand('sample.import', array('catalog/default.xml'));
+		}
+		
 		// Location of the test from module name to the unit tests folder
 		$testsDefaultLocation = f_util_FileUtils::buildAbsolutePath(AG_MODULE_DIR, 'testing', 'testintegration');
 		$phpunitLocation = f_util_FileUtils::buildWebeditPath('changePHPUnit.php');
