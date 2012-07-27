@@ -153,7 +153,7 @@ class testing_IntegrationTestBase extends testing_UnitTestBase
 				$diffPhpErrorLog = array();
 				$cmd = 'diff ' . $newPhpErrorLog . ' ' . $this->phperrorLog;
 				exec($cmd, $diffPhpErrorLog);
-				$this->assertEmpty($diffPhpErrorLog, 'phperror.log was not empty: ' . implode('\n', $diffPhpErrorLog));
+				$this->assertEmpty($diffPhpErrorLog, 'phperror.log was not empty: ' . implode(PHP_EOL, $diffPhpErrorLog));
 			}
 			
 			$newApplicationLog = f_util_FileUtils::buildAbsolutePath(CHANGE_LOG_DIR, 'application.log');

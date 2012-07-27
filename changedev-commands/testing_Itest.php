@@ -87,9 +87,16 @@ class commands_testing_Itest extends commands_testing_Utest
 		
 		if (array_key_exists('rdb', $options))
 		{
-			$this->getParent()->executeCommand('reset-database');
-			$this->getParent()->executeCommand('sample.import', array('website/sample.xml'));
-			$this->getParent()->executeCommand('sample.import', array('catalog/default.xml'));
+			if (ModuleService::getInstance()->isInstalled('sample'))
+			{
+				$this->getParent()->executeCommand('reset-database');
+				$this->getParent()->executeCommand('sample.import', array('website/sample.xml'));
+				$this->getParent()->executeCommand('sample.import', array('catalog/default.xml'));
+			}
+			else
+			{
+				$this->errorMessage('module sample is not installed, please install it before executing --rdb option');
+			}
 		}
 		
 		// Location of the test from module name to the unit tests folder
