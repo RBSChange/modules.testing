@@ -107,7 +107,9 @@ class commands_testing_TestGenerator extends commands_AbstractChangeCommand
 					$className = $tokenArray[$index + 2][1];
 					
 					$reflectionClass = new ReflectionClass($className);
-					if (!$reflectionClass->isAbstract())
+					$deprecated = strpos($reflectionClass->getDocComment(), '@deprecated');
+		
+					if (!$reflectionClass->isAbstract() && $deprecated === false)
 					{
 						$definedClasses[] = $className;
 					}
