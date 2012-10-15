@@ -369,12 +369,26 @@ class catalog_priceIntegrationTest extends testing_IntegrationTestBase
 				
 			$this->assertEquals($randomPrice, $productDeclination->getPriceForCurrentShopAndCustomer()->getValueWithoutTax());
 		}
+		$this->assertFalse($declinedProductUnsynchronized->getSynchronizePrices());
 		
 		//synchronize price from the first declination
 		$firstProductDeclination = $testedProducts[0];
 		$firstDeclinationPriceValue = $firstProductDeclination->getPriceForCurrentShopAndCustomer()->getValueWithoutTax();
 		$declinedProductUnsynchronized->setSynchronizePricesFrom($firstProductDeclination->getId());
 		$declinedProductUnsynchronized->save();
+		
+		/* @var $declinedProductUnsynchronized catalog_persistentdocument_declinedproduct */
+		$this->assertTrue($declinedProductUnsynchronized->getSynchronizePrices());
+		
+		//Refresh the cached prices
+		$this->refreshCache();
+		$declinedProductUnsynchronized = catalog_DeclinedproductService::getInstance()->createQuery()
+			->add(Restrictions::eq('codeReference', 'DECLINED-UNSYNCHRONIZED'))
+			->findUnique();
+		$this->assertNotNull($declinedProductUnsynchronized);
+		$this->assertInstanceOf('catalog_persistentdocument_declinedproduct', $declinedProductUnsynchronized);
+		$testedProducts = $declinedProductUnsynchronized->getProductdeclinationArrayInverse();
+		
 		foreach ($testedProducts as $productDeclination)
 		{
 			/* @var $productDeclination catalog_persistentdocument_productdeclination */
